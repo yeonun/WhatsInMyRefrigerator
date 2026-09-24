@@ -1,5 +1,7 @@
 # 🧊 우리집 냉장고
 
+냉동실정리하다 빡쳐서 만듦
+
 부부가 냉장고 속 재료를 함께 실시간으로 관리하는 웹앱입니다.
 빌드 도구 없이 순수 HTML/CSS/JS로 만들어졌고, Firebase(Authentication + Firestore)를 DB로 사용하며 GitHub Pages로 배포합니다.
 
