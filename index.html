@@ -20,23 +20,12 @@
 
   <!-- 로그인 전 화면 -->
   <div id="login-screen" class="screen hidden">
-    <div class="login-wrap">
-      <div class="fridge fridge-login" aria-hidden="true">
-        <div class="fridge-door fridge-door-tl">
-          <span class="fridge-handle fridge-handle-v fridge-handle-right"></span>
-        </div>
-        <div class="fridge-door fridge-door-tr">
-          <span class="fridge-handle fridge-handle-v fridge-handle-left"></span>
-          <span class="fridge-lock">🔒</span>
-        </div>
-        <div class="fridge-door fridge-door-bl">
-          <span class="fridge-handle fridge-handle-h"></span>
-        </div>
-        <div class="fridge-door fridge-door-br">
-          <span class="fridge-handle fridge-handle-h"></span>
-        </div>
-      </div>
+    <div class="login-bg">
+      <img src="img/fridge-kitchen.png" alt="하얀 4도어 냉장고가 있는 아늑한 주방" class="login-bg-img">
+      <div class="login-scrim"></div>
+    </div>
 
+    <div class="login-overlay">
       <div class="speech-bubble">냉장고 속을 보려면<br>로그인이 필요해요 !</div>
 
       <button id="google-login-btn" class="btn btn-pixel btn-google">
@@ -63,20 +52,9 @@
 
     <main class="content">
       <section class="fridge-hero">
-        <div class="fridge">
-          <div class="fridge-door fridge-door-tl">
-            <span class="fridge-handle fridge-handle-v fridge-handle-right"></span>
-          </div>
-          <div class="fridge-door fridge-door-tr">
-            <span class="fridge-handle fridge-handle-v fridge-handle-left"></span>
-            <div id="sticky-notes" class="sticky-notes"></div>
-          </div>
-          <div class="fridge-door fridge-door-bl">
-            <span class="fridge-handle fridge-handle-h"></span>
-          </div>
-          <div class="fridge-door fridge-door-br">
-            <span class="fridge-handle fridge-handle-h"></span>
-          </div>
+        <div class="fridge-photo-wrap">
+          <img src="img/fridge-kitchen.png" alt="하얀 4도어 냉장고가 있는 아늑한 주방" class="fridge-photo">
+          <div id="sticky-notes" class="sticky-notes"></div>
         </div>
         <p class="fridge-caption">🗒️ 오른쪽 문에 빨리 먹어야 할 재료가 붙어있어요</p>
       </section>
