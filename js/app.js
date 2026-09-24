@@ -29,6 +29,20 @@ const userName = $("user-name");
 
 const stickyNotesEl = $("sticky-notes");
 const MAX_STICKY_NOTES = 5;
+const FROZEN_LOCATION = "냉동실";
+
+const tabButtons = document.querySelectorAll(".tab-btn");
+const tabPanels = { fridge: $("tab-fridge"), list: $("tab-list") };
+
+const fridgePhotoEl = $("fridge-photo");
+const fridgeZoneTop = $("fridge-zone-top");
+const fridgeZoneBottom = $("fridge-zone-bottom");
+const fridgeCaptionEl = $("fridge-caption");
+const fridgeShelfEl = $("fridge-shelf");
+const fridgeShelfTitleEl = $("fridge-shelf-title");
+const fridgeShelfListEl = $("fridge-shelf-list");
+const fridgeShelfEmptyEl = $("fridge-shelf-empty");
+const fridgeCloseBtn = $("fridge-close-btn");
 
 const itemListEl = $("item-list");
 const emptyStateEl = $("empty-state");
@@ -173,16 +187,20 @@ function formatExpiryLabel(expiryDate) {
 }
 
 /* ---------------- 렌더링 ---------------- */
+function withStatus(items) {
+  return items.map((it) => {
+    const expiryDate = it.expiryDate ? new Date(it.expiryDate) : null;
+    return { ...it, _expiryDate: expiryDate, _status: getExpiryStatus(expiryDate) };
+  });
+}
+
 function renderItems() {
   const search = searchInput.value.trim().toLowerCase();
   const catFilter = filterCategory.value;
   const locFilter = filterLocation.value;
   const sortBy = sortSelect.value;
 
-  let items = allItems.map((it) => {
-    const expiryDate = it.expiryDate ? new Date(it.expiryDate) : null;
-    return { ...it, _expiryDate: expiryDate, _status: getExpiryStatus(expiryDate) };
-  });
+  let items = withStatus(allItems);
 
   if (search) {
     items = items.filter((it) => (it.name || "").toLowerCase().includes(search));
@@ -226,6 +244,7 @@ function renderItems() {
   }
 
   renderStickyNotes();
+  if (openSection) renderFridgeShelf();
 }
 
 /* ---------------- 냉장고 문 포스트잇 ---------------- */
@@ -239,11 +258,7 @@ function hashRotation(id) {
 }
 
 function renderStickyNotes() {
-  const urgent = allItems
-    .map((it) => {
-      const expiryDate = it.expiryDate ? new Date(it.expiryDate) : null;
-      return { ...it, _expiryDate: expiryDate, _status: getExpiryStatus(expiryDate) };
-    })
+  const urgent = withStatus(allItems)
     .filter((it) => it._status === "soon" || it._status === "expired")
     .sort((a, b) => a._expiryDate - b._expiryDate);
 
@@ -338,6 +353,63 @@ function makeTag(text) {
   el.addEventListener("input", renderItems);
   el.addEventListener("change", renderItems);
 });
+
+/* ---------------- 하단 탭 (냉장고 / 전체보기) ---------------- */
+tabButtons.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const tab = btn.dataset.tab;
+    Object.entries(tabPanels).forEach(([key, el]) => el.classList.toggle("hidden", key !== tab));
+    tabButtons.forEach((b) => b.classList.toggle("active", b === btn));
+  });
+});
+
+/* ---------------- 냉장고 문 열기/닫기 ---------------- */
+let openSection = null; // null | "cold" | "frozen"
+
+function setOpenSection(section) {
+  openSection = section;
+  fridgePhotoEl.classList.remove("zone-cold", "zone-frozen");
+  if (section) fridgePhotoEl.classList.add(`zone-${section}`);
+
+  if (!section) {
+    fridgeShelfEl.classList.add("hidden");
+    fridgeCaptionEl.classList.remove("hidden");
+    stickyNotesEl.classList.remove("hidden");
+    return;
+  }
+
+  fridgeCaptionEl.classList.add("hidden");
+  stickyNotesEl.classList.add("hidden");
+  fridgeShelfEl.classList.remove("hidden");
+  fridgeShelfTitleEl.textContent = section === "frozen" ? "🧊 냉동실 칸" : "🥬 냉장실 칸";
+  renderFridgeShelf();
+}
+
+function renderFridgeShelf() {
+  if (!openSection) return;
+  const filtered = allItems.filter((it) => {
+    const isFrozen = it.location === FROZEN_LOCATION;
+    return openSection === "frozen" ? isFrozen : !isFrozen;
+  });
+  const items = withStatus(filtered).sort((a, b) => {
+    if (!a._expiryDate && !b._expiryDate) return 0;
+    if (!a._expiryDate) return 1;
+    if (!b._expiryDate) return -1;
+    return a._expiryDate - b._expiryDate;
+  });
+
+  fridgeShelfListEl.innerHTML = "";
+  if (items.length === 0) {
+    fridgeShelfEmptyEl.classList.remove("hidden");
+  } else {
+    fridgeShelfEmptyEl.classList.add("hidden");
+    items.forEach((it) => fridgeShelfListEl.appendChild(renderItemCard(it)));
+  }
+}
+
+fridgeZoneTop.addEventListener("click", () => setOpenSection(openSection === "cold" ? null : "cold"));
+fridgeZoneBottom.addEventListener("click", () => setOpenSection(openSection === "frozen" ? null : "frozen"));
+fridgeCloseBtn.addEventListener("click", () => setOpenSection(null));
 
 /* ---------------- 모달: 추가 / 수정 ---------------- */
 function openAddModal() {

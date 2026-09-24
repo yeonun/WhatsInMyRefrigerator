@@ -51,45 +51,65 @@
     </header>
 
     <main class="content">
-      <section class="fridge-hero">
-        <div class="fridge-photo-wrap">
-          <img src="img/fridge-kitchen.png" alt="하얀 4도어 냉장고가 있는 아늑한 주방" class="fridge-photo">
+      <!-- 냉장고 탭: 문을 열어서 안을 들여다보는 경험 -->
+      <section id="tab-fridge" class="tab-panel">
+        <div class="fridge-photo-wrap fridge-photo-wrap-square">
+          <div id="fridge-photo" class="fridge-photo fridge-photo-bg"></div>
           <div id="sticky-notes" class="sticky-notes"></div>
+          <button id="fridge-zone-top" class="fridge-zone fridge-zone-top" aria-label="냉장실 칸 열기"></button>
+          <button id="fridge-zone-bottom" class="fridge-zone fridge-zone-bottom" aria-label="냉동실 칸 열기"></button>
         </div>
-        <p class="fridge-caption">🗒️ 오른쪽 문에 빨리 먹어야 할 재료가 붙어있어요</p>
-      </section>
+        <p id="fridge-caption" class="fridge-caption">👆 위 칸(냉장실) / 아래 칸(냉동실)을 탭해서 문을 열어보세요</p>
 
-      <section class="summary-bar">
-        <div class="summary-chip total"><span id="count-total">0</span><label>전체</label></div>
-        <div class="summary-chip warn"><span id="count-soon">0</span><label>유통기한 임박</label></div>
-        <div class="summary-chip danger"><span id="count-expired">0</span><label>유통기한 지남</label></div>
-      </section>
-
-      <section class="controls">
-        <input id="search-input" class="search-input" type="text" placeholder="🔍 재료 이름 검색">
-        <div class="filter-row">
-          <select id="filter-category" class="select-input">
-            <option value="">전체 카테고리</option>
-          </select>
-          <select id="filter-location" class="select-input">
-            <option value="">전체 위치</option>
-          </select>
-          <select id="sort-select" class="select-input">
-            <option value="expiry">유통기한 빠른순</option>
-            <option value="name">이름순</option>
-            <option value="createdAt">최근 추가순</option>
-          </select>
+        <div id="fridge-shelf" class="fridge-shelf hidden">
+          <div class="fridge-shelf-header">
+            <h3 id="fridge-shelf-title">냉장실</h3>
+            <button id="fridge-close-btn" class="btn btn-ghost">문 닫기 ✕</button>
+          </div>
+          <div id="fridge-shelf-list" class="item-list"></div>
+          <p id="fridge-shelf-empty" class="empty-state hidden">이 칸은 비어있어요</p>
         </div>
       </section>
 
-      <section id="item-list" class="item-list">
-        <!-- items rendered here -->
-      </section>
+      <!-- 전체보기 탭: 검색/필터로 한눈에 정리 -->
+      <section id="tab-list" class="tab-panel hidden">
+        <section class="summary-bar">
+          <div class="summary-chip total"><span id="count-total">0</span><label>전체</label></div>
+          <div class="summary-chip warn"><span id="count-soon">0</span><label>유통기한 임박</label></div>
+          <div class="summary-chip danger"><span id="count-expired">0</span><label>유통기한 지남</label></div>
+        </section>
 
-      <p id="empty-state" class="empty-state hidden">아직 등록된 재료가 없어요. 오른쪽 아래 + 버튼으로 추가해보세요!</p>
+        <section class="controls">
+          <input id="search-input" class="search-input" type="text" placeholder="🔍 재료 이름 검색">
+          <div class="filter-row">
+            <select id="filter-category" class="select-input">
+              <option value="">전체 카테고리</option>
+            </select>
+            <select id="filter-location" class="select-input">
+              <option value="">전체 위치</option>
+            </select>
+            <select id="sort-select" class="select-input">
+              <option value="expiry">유통기한 빠른순</option>
+              <option value="name">이름순</option>
+              <option value="createdAt">최근 추가순</option>
+            </select>
+          </div>
+        </section>
+
+        <section id="item-list" class="item-list">
+          <!-- items rendered here -->
+        </section>
+
+        <p id="empty-state" class="empty-state hidden">아직 등록된 재료가 없어요. 오른쪽 아래 + 버튼으로 추가해보세요!</p>
+      </section>
     </main>
 
     <button id="add-item-fab" class="fab" title="재료 추가">+</button>
+
+    <nav class="tabbar">
+      <button class="tab-btn active" data-tab="fridge"><span class="tab-icon">🧊</span>냉장고</button>
+      <button class="tab-btn" data-tab="list"><span class="tab-icon">📋</span>전체보기</button>
+    </nav>
   </div>
 
   <!-- 재료 추가/수정 모달 -->
