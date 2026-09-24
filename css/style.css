@@ -160,10 +160,17 @@ h1, h2, .pixel-title { font-family: "Galmuri14", "Malgun Gothic", sans-serif; }
 .btn-danger { border: 3px solid var(--ink); clip-path: var(--notch); background: var(--coral); color: var(--ink); padding: 12px 20px; font-size: 14px; box-shadow: var(--shadow-sm); }
 .btn-danger:active { transform: translate(3px, 3px); box-shadow: none; }
 
+/* ---------- 앱 화면 레이아웃 (상단바 / 콘텐츠 / 탭바를 세로로 고정) ---------- */
+#app-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+}
+
 /* ---------- 상단바 ---------- */
 .topbar {
-  position: sticky;
-  top: 0;
+  flex-shrink: 0;
   z-index: 10;
   display: flex;
   align-items: center;
@@ -180,29 +187,32 @@ h1, h2, .pixel-title { font-family: "Galmuri14", "Malgun Gothic", sans-serif; }
 
 /* ---------- 콘텐츠 ---------- */
 .content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   max-width: 720px;
   margin: 0 auto;
-  padding: 18px 16px 160px;
+  width: 100%;
 }
 
-/* ---------- 냉장고 탭: 문을 열어서 들여다보기 ---------- */
+#tab-list { padding: 18px 16px 24px; }
+
+/* ---------- 냉장고 탭: 문을 열어서 들여다보기 (모바일 기준 전체화면) ---------- */
 #tab-fridge {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 22px;
 }
 
 .fridge-photo-wrap {
   position: relative;
   width: 100%;
-  max-width: 340px;
-  margin: 0 auto;
-  border: 4px solid var(--ink);
-  box-shadow: var(--shadow-md);
+  aspect-ratio: 1 / 1;
   overflow: hidden;
 }
-.fridge-photo-wrap-square { aspect-ratio: 1 / 1; }
+@media (min-width: 600px) {
+  .fridge-photo-wrap { max-width: 480px; margin: 0 auto; }
+}
 
 .fridge-photo-bg {
   position: absolute;
@@ -216,23 +226,27 @@ h1, h2, .pixel-title { font-family: "Galmuri14", "Malgun Gothic", sans-serif; }
   background-size: 200% 200%;
   background-position: 0% 0%;
 }
-.fridge-photo-bg.zone-frozen {
+.fridge-photo-bg.zone-freezer-left {
   background-image: url('../img/fridge-open-sprite.png');
   background-size: 200% 200%;
   background-position: 100% 0%;
 }
+.fridge-photo-bg.zone-freezer-right {
+  background-image: url('../img/fridge-open-sprite.png');
+  background-size: 200% 200%;
+  background-position: 0% 100%;
+}
 
 .fridge-zone {
   position: absolute;
-  left: 28%;
-  width: 41%;
   border: none;
   background: transparent;
   cursor: pointer;
   padding: 0;
 }
-.fridge-zone-top { top: 10%; height: 40%; }
-.fridge-zone-bottom { top: 51%; height: 32%; }
+.fridge-zone-top { left: 28%; width: 41%; top: 10%; height: 40%; }
+.fridge-zone-freezer-left { left: 28%; width: 20.5%; top: 51%; height: 32%; }
+.fridge-zone-freezer-right { left: 48.5%; width: 20.5%; top: 51%; height: 32%; }
 
 .sticky-notes {
   position: absolute;
@@ -294,23 +308,12 @@ h1, h2, .pixel-title { font-family: "Galmuri14", "Malgun Gothic", sans-serif; }
 .sticky-note.status-empty::before { display: none; }
 
 .fridge-caption {
-  margin-top: 12px;
+  margin-top: 10px;
+  padding: 0 16px;
   font-size: 11px;
   color: var(--ink-soft);
   text-align: center;
 }
-
-.fridge-shelf {
-  width: 100%;
-  margin-top: 16px;
-}
-.fridge-shelf-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-.fridge-shelf-header h3 { font-size: 15px; margin: 0; }
 
 /* ---------- 요약 바 ---------- */
 .summary-bar {
@@ -417,10 +420,7 @@ h1, h2, .pixel-title { font-family: "Galmuri14", "Malgun Gothic", sans-serif; }
 
 /* ---------- 하단 탭바 ---------- */
 .tabbar {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  flex-shrink: 0;
   z-index: 15;
   display: grid;
   grid-template-columns: 1fr 1fr;

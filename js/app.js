@@ -12,8 +12,17 @@ auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch((err) => console
 
 /* ---------------- 상수 ---------------- */
 const CATEGORIES = ["채소", "과일", "육류/계란", "유제품", "음료", "조미료/소스", "냉동식품", "가공식품/밀키트", "기타"];
-const LOCATIONS = ["냉장실", "냉동실", "야채칸", "문칸", "기타"];
+const LOCATION_GROUPS = [
+  { label: "냉장", options: ["냉장실", "야채칸", "문칸", "기타"] },
+  { label: "냉동실(좌)", options: ["냉동실(좌)-문칸", "냉동실(좌)-상단", "냉동실(좌)-중간", "냉동실(좌)-하단"] },
+  { label: "냉동실(우)", options: ["냉동실(우)-문칸", "냉동실(우)-상단", "냉동실(우)-중간", "냉동실(우)-하단"] },
+];
+const LOCATIONS = LOCATION_GROUPS.flatMap((g) => g.options);
 const SOON_THRESHOLD_DAYS = 3;
+
+function isFreezerLeft(loc) { return typeof loc === "string" && loc.startsWith("냉동실(좌)"); }
+function isFreezerRight(loc) { return typeof loc === "string" && loc.startsWith("냉동실(우)"); }
+function isFrozenLocation(loc) { return isFreezerLeft(loc) || isFreezerRight(loc); }
 
 /* ---------------- DOM 요소 ---------------- */
 const $ = (id) => document.getElementById(id);
@@ -29,20 +38,19 @@ const userName = $("user-name");
 
 const stickyNotesEl = $("sticky-notes");
 const MAX_STICKY_NOTES = 5;
-const FROZEN_LOCATION = "냉동실";
 
 const tabButtons = document.querySelectorAll(".tab-btn");
 const tabPanels = { fridge: $("tab-fridge"), list: $("tab-list") };
 
 const fridgePhotoEl = $("fridge-photo");
 const fridgeZoneTop = $("fridge-zone-top");
-const fridgeZoneBottom = $("fridge-zone-bottom");
-const fridgeCaptionEl = $("fridge-caption");
-const fridgeShelfEl = $("fridge-shelf");
+const fridgeZoneFreezerLeft = $("fridge-zone-freezer-left");
+const fridgeZoneFreezerRight = $("fridge-zone-freezer-right");
+const fridgeShelfModal = $("fridge-shelf-modal");
 const fridgeShelfTitleEl = $("fridge-shelf-title");
 const fridgeShelfListEl = $("fridge-shelf-list");
 const fridgeShelfEmptyEl = $("fridge-shelf-empty");
-const fridgeCloseBtn = $("fridge-close-btn");
+const fridgeShelfCloseBtn = $("fridge-shelf-close-btn");
 
 const itemListEl = $("item-list");
 const emptyStateEl = $("empty-state");
@@ -86,10 +94,30 @@ function fillSelectOptions(selectEl, values, includeEmpty) {
     selectEl.appendChild(opt);
   });
 }
+function fillGroupedSelectOptions(selectEl, groups, includeEmpty) {
+  if (includeEmpty) {
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = includeEmpty;
+    selectEl.appendChild(opt);
+  }
+  groups.forEach((group) => {
+    const optgroup = document.createElement("optgroup");
+    optgroup.label = group.label;
+    group.options.forEach((v) => {
+      const opt = document.createElement("option");
+      opt.value = v;
+      opt.textContent = v;
+      optgroup.appendChild(opt);
+    });
+    selectEl.appendChild(optgroup);
+  });
+}
+
 fillSelectOptions(filterCategory, CATEGORIES);
-fillSelectOptions(filterLocation, LOCATIONS);
+fillGroupedSelectOptions(filterLocation, LOCATION_GROUPS);
 fillSelectOptions(itemCategoryInput, CATEGORIES);
-fillSelectOptions(itemLocationInput, LOCATIONS);
+fillGroupedSelectOptions(itemLocationInput, LOCATION_GROUPS);
 
 /* ---------------- 인증 ---------------- */
 googleLoginBtn.addEventListener("click", () => {
@@ -363,33 +391,39 @@ tabButtons.forEach((btn) => {
   });
 });
 
-/* ---------------- 냉장고 문 열기/닫기 ---------------- */
-let openSection = null; // null | "cold" | "frozen"
+/* ---------------- 냉장고 문 열기/닫기 (팝업) ---------------- */
+const FRIDGE_ZONE_CLASSES = ["zone-cold", "zone-freezer-left", "zone-freezer-right"];
+const FRIDGE_SECTION_TITLES = {
+  cold: "🥬 냉장실 칸",
+  freezerLeft: "🧊 냉동실 (좌)",
+  freezerRight: "🧊 냉동실 (우)",
+};
 
-function setOpenSection(section) {
+let openSection = null; // null | "cold" | "freezerLeft" | "freezerRight"
+
+function openFridgeSection(section) {
   openSection = section;
-  fridgePhotoEl.classList.remove("zone-cold", "zone-frozen");
-  if (section) fridgePhotoEl.classList.add(`zone-${section}`);
-
-  if (!section) {
-    fridgeShelfEl.classList.add("hidden");
-    fridgeCaptionEl.classList.remove("hidden");
-    stickyNotesEl.classList.remove("hidden");
-    return;
-  }
-
-  fridgeCaptionEl.classList.add("hidden");
-  stickyNotesEl.classList.add("hidden");
-  fridgeShelfEl.classList.remove("hidden");
-  fridgeShelfTitleEl.textContent = section === "frozen" ? "🧊 냉동실 칸" : "🥬 냉장실 칸";
+  fridgePhotoEl.classList.remove(...FRIDGE_ZONE_CLASSES);
+  fridgePhotoEl.classList.add(
+    section === "freezerLeft" ? "zone-freezer-left" : section === "freezerRight" ? "zone-freezer-right" : "zone-cold"
+  );
+  fridgeShelfTitleEl.textContent = FRIDGE_SECTION_TITLES[section];
   renderFridgeShelf();
+  fridgeShelfModal.classList.remove("hidden");
+}
+
+function closeFridgeSection() {
+  openSection = null;
+  fridgePhotoEl.classList.remove(...FRIDGE_ZONE_CLASSES);
+  fridgeShelfModal.classList.add("hidden");
 }
 
 function renderFridgeShelf() {
   if (!openSection) return;
   const filtered = allItems.filter((it) => {
-    const isFrozen = it.location === FROZEN_LOCATION;
-    return openSection === "frozen" ? isFrozen : !isFrozen;
+    if (openSection === "freezerLeft") return isFreezerLeft(it.location);
+    if (openSection === "freezerRight") return isFreezerRight(it.location);
+    return !isFrozenLocation(it.location);
   });
   const items = withStatus(filtered).sort((a, b) => {
     if (!a._expiryDate && !b._expiryDate) return 0;
@@ -407,9 +441,13 @@ function renderFridgeShelf() {
   }
 }
 
-fridgeZoneTop.addEventListener("click", () => setOpenSection(openSection === "cold" ? null : "cold"));
-fridgeZoneBottom.addEventListener("click", () => setOpenSection(openSection === "frozen" ? null : "frozen"));
-fridgeCloseBtn.addEventListener("click", () => setOpenSection(null));
+fridgeZoneTop.addEventListener("click", () => openFridgeSection("cold"));
+fridgeZoneFreezerLeft.addEventListener("click", () => openFridgeSection("freezerLeft"));
+fridgeZoneFreezerRight.addEventListener("click", () => openFridgeSection("freezerRight"));
+fridgeShelfCloseBtn.addEventListener("click", closeFridgeSection);
+fridgeShelfModal.addEventListener("click", (e) => {
+  if (e.target === fridgeShelfModal) closeFridgeSection();
+});
 
 /* ---------------- 모달: 추가 / 수정 ---------------- */
 function openAddModal() {

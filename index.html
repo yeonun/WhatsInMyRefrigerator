@@ -53,22 +53,14 @@
     <main class="content">
       <!-- 냉장고 탭: 문을 열어서 안을 들여다보는 경험 -->
       <section id="tab-fridge" class="tab-panel">
-        <div class="fridge-photo-wrap fridge-photo-wrap-square">
-          <div id="fridge-photo" class="fridge-photo fridge-photo-bg"></div>
+        <div class="fridge-photo-wrap">
+          <div id="fridge-photo" class="fridge-photo-bg"></div>
           <div id="sticky-notes" class="sticky-notes"></div>
           <button id="fridge-zone-top" class="fridge-zone fridge-zone-top" aria-label="냉장실 칸 열기"></button>
-          <button id="fridge-zone-bottom" class="fridge-zone fridge-zone-bottom" aria-label="냉동실 칸 열기"></button>
+          <button id="fridge-zone-freezer-left" class="fridge-zone fridge-zone-freezer-left" aria-label="냉동실(좌) 열기"></button>
+          <button id="fridge-zone-freezer-right" class="fridge-zone fridge-zone-freezer-right" aria-label="냉동실(우) 열기"></button>
         </div>
-        <p id="fridge-caption" class="fridge-caption">👆 위 칸(냉장실) / 아래 칸(냉동실)을 탭해서 문을 열어보세요</p>
-
-        <div id="fridge-shelf" class="fridge-shelf hidden">
-          <div class="fridge-shelf-header">
-            <h3 id="fridge-shelf-title">냉장실</h3>
-            <button id="fridge-close-btn" class="btn btn-ghost">문 닫기 ✕</button>
-          </div>
-          <div id="fridge-shelf-list" class="item-list"></div>
-          <p id="fridge-shelf-empty" class="empty-state hidden">이 칸은 비어있어요</p>
-        </div>
+        <p class="fridge-caption">👆 위 칸(냉장실) · 아래 왼쪽(냉동실 좌) · 아래 오른쪽(냉동실 우)을 탭해보세요</p>
       </section>
 
       <!-- 전체보기 탭: 검색/필터로 한눈에 정리 -->
@@ -110,6 +102,18 @@
       <button class="tab-btn active" data-tab="fridge"><span class="tab-icon">🧊</span>냉장고</button>
       <button class="tab-btn" data-tab="list"><span class="tab-icon">📋</span>전체보기</button>
     </nav>
+  </div>
+
+  <!-- 냉장고 칸 팝업 -->
+  <div id="fridge-shelf-modal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="fridge-shelf-title">냉장실</h2>
+        <button id="fridge-shelf-close-btn" class="btn btn-ghost">✕</button>
+      </div>
+      <div id="fridge-shelf-list" class="item-list"></div>
+      <p id="fridge-shelf-empty" class="empty-state hidden">이 칸은 비어있어요</p>
+    </div>
   </div>
 
   <!-- 재료 추가/수정 모달 -->
