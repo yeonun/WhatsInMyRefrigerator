@@ -76,6 +76,7 @@ const itemCategoryInput = $("item-category");
 const itemLocationInput = $("item-location");
 const itemMemoInput = $("item-memo");
 const deleteItemBtn = $("delete-item-btn");
+const saveItemBtn = $("save-item-btn");
 
 const toastEl = $("toast");
 
@@ -303,9 +304,12 @@ function renderStickyNotes() {
 
   const shown = urgent.slice(0, MAX_STICKY_NOTES);
   shown.forEach((it) => {
-    const note = document.createElement("div");
+    // 포스트잇을 누르면 그 재료가 들어있는 칸의 문이 열리고 해당 재료가 강조됨
+    const note = document.createElement("button");
+    note.type = "button";
     note.className = `sticky-note status-${it._status}`;
     note.style.setProperty("--rot", `${hashRotation(it.id)}deg`);
+    note.addEventListener("click", () => openFridgeSection(sectionOfLocation(it.location), it.id));
 
     const name = document.createElement("span");
     name.className = "note-name";
@@ -333,6 +337,7 @@ function renderStickyNotes() {
 function renderItemCard(item) {
   const card = document.createElement("div");
   card.className = `item-card status-${item._status === "none" ? "ok" : item._status}`;
+  card.dataset.itemId = item.id;
   card.addEventListener("click", () => openEditModal(item));
 
   const main = document.createElement("div");
@@ -400,9 +405,18 @@ const FRIDGE_SECTION_TITLES = {
 };
 
 let openSection = null; // null | "cold" | "freezerLeft" | "freezerRight"
+let highlightItemId = null;
 
-function openFridgeSection(section) {
+// 보관 위치로 어느 칸에 속하는지 판별
+function sectionOfLocation(loc) {
+  if (isFreezerLeft(loc)) return "freezerLeft";
+  if (isFreezerRight(loc)) return "freezerRight";
+  return "cold";
+}
+
+function openFridgeSection(section, itemIdToHighlight) {
   openSection = section;
+  highlightItemId = itemIdToHighlight || null;
   fridgePhotoEl.classList.remove(...FRIDGE_ZONE_CLASSES);
   fridgePhotoEl.classList.add(
     section === "freezerLeft" ? "zone-freezer-left" : section === "freezerRight" ? "zone-freezer-right" : "zone-cold"
@@ -412,10 +426,16 @@ function openFridgeSection(section) {
   fridgeShelfTitleEl.textContent = FRIDGE_SECTION_TITLES[section];
   renderFridgeShelf();
   fridgeShelfModal.classList.remove("hidden");
+
+  if (highlightItemId) {
+    const card = fridgeShelfListEl.querySelector(`[data-item-id="${highlightItemId}"]`);
+    if (card) card.scrollIntoView({ block: "nearest" });
+  }
 }
 
 function closeFridgeSection() {
   openSection = null;
+  highlightItemId = null;
   fridgePhotoEl.classList.remove(...FRIDGE_ZONE_CLASSES);
   stickyNotesEl.classList.remove("hidden");
   fridgeShelfModal.classList.add("hidden");
@@ -440,7 +460,11 @@ function renderFridgeShelf() {
     fridgeShelfEmptyEl.classList.remove("hidden");
   } else {
     fridgeShelfEmptyEl.classList.add("hidden");
-    items.forEach((it) => fridgeShelfListEl.appendChild(renderItemCard(it)));
+    items.forEach((it) => {
+      const card = renderItemCard(it);
+      if (highlightItemId && it.id === highlightItemId) card.classList.add("item-card-highlight");
+      fridgeShelfListEl.appendChild(card);
+    });
   }
 }
 
@@ -484,8 +508,12 @@ itemModal.addEventListener("click", (e) => {
   if (e.target === itemModal) closeModal();
 });
 
+// 저장 버튼을 연타해도 중복 등록되지 않도록 잠금
+let isSaving = false;
+
 itemForm.addEventListener("submit", async (e) => {
   e.preventDefault();
+  if (isSaving) return;
   const user = auth.currentUser;
   if (!user) return;
 
@@ -506,6 +534,8 @@ itemForm.addEventListener("submit", async (e) => {
   }
 
   const id = itemIdInput.value;
+  isSaving = true;
+  saveItemBtn.disabled = true;
   try {
     if (id) {
       await itemsRef.doc(id).update(data);
@@ -520,6 +550,9 @@ itemForm.addEventListener("submit", async (e) => {
   } catch (err) {
     console.error(err);
     showToast("저장에 실패했어요: " + err.message);
+  } finally {
+    isSaving = false;
+    saveItemBtn.disabled = false;
   }
 });
 
