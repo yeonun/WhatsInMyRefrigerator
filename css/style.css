@@ -278,6 +278,8 @@ h1, h2, .pixel-title { font-family: "Galmuri14", "Malgun Gothic", sans-serif; }
   top: 10%;
   width: 20%;
   height: 40%;
+  /* 포스트잇이 냉장실 문 클릭 영역 안에 겹쳐 있어, 위로 올리지 않으면 탭이 문에 먹힘 */
+  z-index: 2;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -418,6 +420,34 @@ button.sticky-note:active { transform: rotate(var(--rot)) translate(2px, 2px); b
 .item-card.status-soon { background: var(--yellow); }
 .item-card.status-expired { background: var(--coral); }
 
+/* ---------- 전체보기: 좌측 스와이프 삭제 ---------- */
+.item-swipe {
+  position: relative;
+  overflow: hidden;
+  padding: 0 4px 4px 0;
+}
+.item-swipe-delete {
+  position: absolute;
+  top: 0;
+  right: 4px;
+  bottom: 4px;
+  width: 84px;
+  border: 3px solid var(--ink);
+  clip-path: var(--notch);
+  background: var(--coral);
+  color: var(--ink);
+  font-family: "Galmuri11", sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.item-swipe .item-card {
+  position: relative;
+  touch-action: pan-y;
+  transition: transform 0.18s ease;
+}
+.item-swipe.swipe-open .item-card { transform: translateX(-84px); }
+
 /* 포스트잇을 눌러 들어왔을 때 해당 재료를 잠시 강조 */
 .item-card-highlight {
   outline: 3px solid var(--mint-dark);
@@ -524,6 +554,7 @@ button.sticky-note:active { transform: rotate(var(--rot)) translate(2px, 2px); b
 .modal-header h2 { font-size: 16px; margin: 0; }
 
 .form-label { display: block; font-size: 11px; color: var(--ink-soft); margin: 14px 0 6px; font-weight: 700; }
+.form-hint { font-weight: 400; opacity: 0.8; }
 /* font-size를 16px 미만으로 두면 iOS Safari가 필드 포커스 시 화면을 확대해버림 */
 .form-input {
   width: 100%;

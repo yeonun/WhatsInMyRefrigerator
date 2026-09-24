@@ -6,7 +6,7 @@
 <title>우리집 냉장고</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧊</text></svg>">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri/dist/galmuri.css">
-<link rel="stylesheet" href="css/style.css?v=20260925a">
+<link rel="stylesheet" href="css/style.css?v=20260925b">
 </head>
 <body>
 
@@ -128,8 +128,10 @@
       <form id="item-form" class="modal-form">
         <input type="hidden" id="item-id">
 
-        <label class="form-label">재료 이름 *</label>
-        <input id="item-name" class="form-input" type="text" required placeholder="예: 계란, 우유, 삼겹살">
+        <label class="form-label">재료 이름 * <span class="form-hint">직접 입력하거나 전에 넣었던 재료를 고를 수 있어요</span></label>
+        <input id="item-name" class="form-input" type="text" required placeholder="예: 계란, 우유, 삼겹살"
+               list="name-options" autocomplete="off">
+        <datalist id="name-options"></datalist>
 
         <div class="form-row">
           <div class="form-col">
@@ -144,8 +146,10 @@
 
         <div class="form-row">
           <div class="form-col">
-            <label class="form-label">카테고리</label>
-            <select id="item-category" class="form-input"></select>
+            <label class="form-label">카테고리 <span class="form-hint">새로 만들어도 돼요</span></label>
+            <input id="item-category" class="form-input" type="text" placeholder="예: 채소"
+                   list="category-options" autocomplete="off">
+            <datalist id="category-options"></datalist>
           </div>
           <div class="form-col">
             <label class="form-label">보관 위치</label>
@@ -171,7 +175,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js"></script>
 
-  <script src="js/firebase-config.js?v=20260925a"></script>
-  <script src="js/app.js?v=20260925a"></script>
+  <script src="js/firebase-config.js?v=20260925b"></script>
+  <script src="js/app.js?v=20260925b"></script>
 </body>
 </html>

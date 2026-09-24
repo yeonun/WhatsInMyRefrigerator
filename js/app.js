@@ -39,6 +39,8 @@ const userName = $("user-name");
 const stickyNotesEl = $("sticky-notes");
 const MAX_STICKY_NOTES = 5;
 
+let allItems = [];
+
 const tabButtons = document.querySelectorAll(".tab-btn");
 const tabPanels = { fridge: $("tab-fridge"), list: $("tab-list") };
 
@@ -77,6 +79,8 @@ const itemLocationInput = $("item-location");
 const itemMemoInput = $("item-memo");
 const deleteItemBtn = $("delete-item-btn");
 const saveItemBtn = $("save-item-btn");
+const nameOptionsEl = $("name-options");
+const categoryOptionsEl = $("category-options");
 
 const toastEl = $("toast");
 
@@ -115,10 +119,46 @@ function fillGroupedSelectOptions(selectEl, groups, includeEmpty) {
   });
 }
 
-fillSelectOptions(filterCategory, CATEGORIES);
 fillGroupedSelectOptions(filterLocation, LOCATION_GROUPS);
-fillSelectOptions(itemCategoryInput, CATEGORIES);
 fillGroupedSelectOptions(itemLocationInput, LOCATION_GROUPS);
+
+// 재료 이름 / 카테고리는 직접 입력이 기본이고, 과거 입력값을 제안으로 보여줌(datalist)
+function fillDatalist(datalistEl, values) {
+  datalistEl.innerHTML = "";
+  values.forEach((v) => {
+    const opt = document.createElement("option");
+    opt.value = v;
+    datalistEl.appendChild(opt);
+  });
+}
+
+// 지금까지 쓴 값들을 모아 자주 쓴 순 → 이름순으로 정렬
+function usedValues(field) {
+  const counts = new Map();
+  allItems.forEach((it) => {
+    const v = (it[field] || "").trim();
+    if (v) counts.set(v, (counts.get(v) || 0) + 1);
+  });
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "ko"))
+    .map(([v]) => v);
+}
+
+function refreshSuggestions() {
+  fillDatalist(nameOptionsEl, usedValues("name"));
+
+  // 기본 카테고리 + 사용자가 새로 만든 카테고리
+  const used = usedValues("category");
+  const categories = [...CATEGORIES, ...used.filter((c) => !CATEGORIES.includes(c))];
+  fillDatalist(categoryOptionsEl, categories);
+
+  // 전체보기의 카테고리 필터도 같은 목록으로 유지 (선택값은 보존)
+  const prev = filterCategory.value;
+  filterCategory.innerHTML = "";
+  fillSelectOptions(filterCategory, categories, "전체 카테고리");
+  filterCategory.value = categories.includes(prev) ? prev : "";
+}
+refreshSuggestions();
 
 /* ---------------- 인증 ---------------- */
 googleLoginBtn.addEventListener("click", () => {
@@ -139,8 +179,8 @@ function showLoginError(msg) {
   loginError.classList.remove("hidden");
 }
 
+
 let unsubscribeItems = null;
-let allItems = [];
 
 auth.onAuthStateChanged((user) => {
   loadingScreen.classList.add("hidden");
@@ -269,11 +309,12 @@ function renderItems() {
     emptyStateEl.classList.remove("hidden");
   } else {
     emptyStateEl.classList.add("hidden");
-    items.forEach((it) => itemListEl.appendChild(renderItemCard(it)));
+    items.forEach((it) => itemListEl.appendChild(renderSwipeableItem(it)));
   }
 
   renderStickyNotes();
   if (openSection) renderFridgeShelf();
+  refreshSuggestions();
 }
 
 /* ---------------- 냉장고 문 포스트잇 ---------------- */
@@ -338,7 +379,19 @@ function renderItemCard(item) {
   const card = document.createElement("div");
   card.className = `item-card status-${item._status === "none" ? "ok" : item._status}`;
   card.dataset.itemId = item.id;
-  card.addEventListener("click", () => openEditModal(item));
+  card.addEventListener("click", () => {
+    // 스와이프 중이었거나 삭제 버튼이 열려있으면 수정창을 열지 않음
+    if (card.dataset.suppressClick === "1") {
+      card.dataset.suppressClick = "0";
+      return;
+    }
+    const wrap = card.closest(".item-swipe");
+    if (wrap && wrap.classList.contains("swipe-open")) {
+      closeOpenSwipe();
+      return;
+    }
+    openEditModal(item);
+  });
 
   const main = document.createElement("div");
   main.className = "item-main";
@@ -380,6 +433,111 @@ function makeTag(text) {
   span.className = "item-tag";
   span.textContent = text;
   return span;
+}
+
+/* ---------------- 전체보기: 좌측 스와이프로 삭제 ---------------- */
+const SWIPE_WIDTH = 84;
+let openSwipeWrap = null;
+
+function closeOpenSwipe() {
+  if (openSwipeWrap) {
+    openSwipeWrap.classList.remove("swipe-open");
+    const c = openSwipeWrap.querySelector(".item-card");
+    if (c) c.style.transform = "";
+    openSwipeWrap = null;
+  }
+}
+
+function setSwipeOpen(wrap, card, open) {
+  card.style.transform = "";
+  wrap.classList.toggle("swipe-open", open);
+  if (open) {
+    if (openSwipeWrap && openSwipeWrap !== wrap) closeOpenSwipe();
+    openSwipeWrap = wrap;
+  } else if (openSwipeWrap === wrap) {
+    openSwipeWrap = null;
+  }
+}
+
+function renderSwipeableItem(item) {
+  const wrap = document.createElement("div");
+  wrap.className = "item-swipe";
+
+  const delBtn = document.createElement("button");
+  delBtn.type = "button";
+  delBtn.className = "item-swipe-delete";
+  delBtn.textContent = "삭제";
+  delBtn.addEventListener("click", () => deleteItem(item));
+
+  const card = renderItemCard(item);
+  wrap.appendChild(delBtn);
+  wrap.appendChild(card);
+  attachSwipe(wrap, card);
+  return wrap;
+}
+
+function attachSwipe(wrap, card) {
+  let startX = 0, startY = 0, tracking = false, moved = false, wasOpen = false;
+
+  card.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    startX = e.clientX;
+    startY = e.clientY;
+    tracking = true;
+    moved = false;
+    wasOpen = wrap.classList.contains("swipe-open");
+    card.style.transition = "none";
+  });
+
+  card.addEventListener("pointermove", (e) => {
+    if (!tracking) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    if (!moved) {
+      // 세로로 움직이면 스와이프가 아니라 스크롤로 넘김
+      if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 8) { tracking = false; card.style.transition = ""; return; }
+      if (Math.abs(dx) < 8) return;
+      moved = true;
+    }
+    const base = wasOpen ? -SWIPE_WIDTH : 0;
+    const offset = Math.min(0, Math.max(-SWIPE_WIDTH, base + dx));
+    card.style.transform = `translateX(${offset}px)`;
+  });
+
+  const finish = (e) => {
+    if (!tracking) return;
+    tracking = false;
+    card.style.transition = "";
+    if (!moved) return;
+    card.dataset.suppressClick = "1";
+    const base = wasOpen ? -SWIPE_WIDTH : 0;
+    const offset = base + (e.clientX - startX);
+    setSwipeOpen(wrap, card, offset < -SWIPE_WIDTH / 2);
+  };
+
+  card.addEventListener("pointerup", finish);
+  card.addEventListener("pointercancel", () => {
+    tracking = false;
+    card.style.transition = "";
+    setSwipeOpen(wrap, card, wasOpen);
+  });
+}
+
+// 목록 밖을 누르면 열려있던 삭제 버튼을 닫음
+document.addEventListener("pointerdown", (e) => {
+  if (openSwipeWrap && !openSwipeWrap.contains(e.target)) closeOpenSwipe();
+});
+
+async function deleteItem(item) {
+  if (!confirm(`'${item.name || "이 재료"}'를 삭제할까요?`)) return;
+  try {
+    await itemsRef.doc(item.id).delete();
+    closeOpenSwipe();
+    showToast("삭제했어요.");
+  } catch (err) {
+    console.error(err);
+    showToast("삭제에 실패했어요: " + err.message);
+  }
 }
 
 [searchInput, filterCategory, filterLocation, sortSelect].forEach((el) => {
