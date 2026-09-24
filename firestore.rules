@@ -1,0 +1,20 @@
+rules_version = '2';
+
+// 🔒 이 앱에 로그인 가능한 두 사람의 구글 계정 이메일.
+// js/firebase-config.js 의 ALLOWED_EMAILS 와 반드시 동일하게 맞춰주세요.
+// (클라이언트 쪽 체크는 우회될 수 있으므로, 실제 보안은 이 규칙이 담당합니다)
+function isAllowedUser() {
+  return request.auth != null &&
+    request.auth.token.email in [
+      'derekjychoi@gmail.com',
+      'yeongeeeee@gmail.com'
+    ];
+}
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /items/{itemId} {
+      allow read, write: if isAllowedUser();
+    }
+  }
+}
