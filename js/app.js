@@ -23,6 +23,9 @@ const logoutBtn = $("logout-btn");
 const userPhoto = $("user-photo");
 const userName = $("user-name");
 
+const stickyNotesEl = $("sticky-notes");
+const MAX_STICKY_NOTES = 5;
+
 const itemListEl = $("item-list");
 const emptyStateEl = $("empty-state");
 const countTotalEl = $("count-total");
@@ -214,6 +217,67 @@ function renderItems() {
   } else {
     emptyStateEl.classList.add("hidden");
     items.forEach((it) => itemListEl.appendChild(renderItemCard(it)));
+  }
+
+  renderStickyNotes();
+}
+
+/* ---------------- 냉장고 문 포스트잇 ---------------- */
+// 문자열을 안정적인 각도(-6deg ~ 6deg)로 매핑 (매 렌더마다 같은 아이템은 같은 각도 유지)
+function hashRotation(id) {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash * 31 + id.charCodeAt(i)) % 1000;
+  }
+  return (hash % 13) - 6;
+}
+
+function renderStickyNotes() {
+  const urgent = allItems
+    .map((it) => {
+      const expiryDate = it.expiryDate ? new Date(it.expiryDate) : null;
+      return { ...it, _expiryDate: expiryDate, _status: getExpiryStatus(expiryDate) };
+    })
+    .filter((it) => it._status === "soon" || it._status === "expired")
+    .sort((a, b) => a._expiryDate - b._expiryDate);
+
+  stickyNotesEl.innerHTML = "";
+
+  if (urgent.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "sticky-note status-empty";
+    empty.textContent = "빨리 먹어야 할\n재료가 없어요";
+    empty.style.whiteSpace = "pre-line";
+    stickyNotesEl.appendChild(empty);
+    return;
+  }
+
+  const shown = urgent.slice(0, MAX_STICKY_NOTES);
+  shown.forEach((it) => {
+    const note = document.createElement("div");
+    note.className = `sticky-note status-${it._status}`;
+    note.style.setProperty("--rot", `${hashRotation(it.id)}deg`);
+
+    const name = document.createElement("span");
+    name.className = "note-name";
+    name.textContent = it.name || "(이름 없음)";
+
+    const day = document.createElement("span");
+    day.className = "note-day";
+    const dateLabel = formatExpiryLabel(it._expiryDate);
+    day.textContent = dateLabel.substring(dateLabel.indexOf("(") + 1).replace(")", "");
+
+    note.appendChild(name);
+    note.appendChild(day);
+    stickyNotesEl.appendChild(note);
+  });
+
+  const remaining = urgent.length - shown.length;
+  if (remaining > 0) {
+    const more = document.createElement("div");
+    more.className = "sticky-note status-more";
+    more.textContent = `+${remaining}개 더`;
+    stickyNotesEl.appendChild(more);
   }
 }
 

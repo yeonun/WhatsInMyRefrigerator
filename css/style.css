@@ -116,6 +116,111 @@ body {
   padding: 18px 16px 100px;
 }
 
+/* ---------- 냉장고 히어로 (4도어 + 포스트잇) ---------- */
+.fridge-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 22px;
+}
+
+.fridge {
+  width: 100%;
+  max-width: 280px;
+  aspect-ratio: 3 / 4;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 3fr 2fr;
+  gap: 5px;
+  background: linear-gradient(160deg, #ccd4dc, #a7b1bc);
+  border-radius: 24px;
+  padding: 6px;
+  box-shadow: 0 14px 32px rgba(20, 40, 70, 0.18), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+.fridge-door {
+  position: relative;
+  background: linear-gradient(155deg, #ffffff 0%, #f4f7fa 55%, #e8edf2 100%);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04), inset 0 2px 6px rgba(255, 255, 255, 0.9), 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+.fridge-door-tl { border-radius: 18px 5px 5px 18px; }
+.fridge-door-tr { border-radius: 5px 18px 18px 5px; }
+.fridge-door-bl { border-radius: 18px 5px 5px 18px; }
+.fridge-door-br { border-radius: 5px 18px 18px 5px; }
+
+.fridge-handle {
+  position: absolute;
+  background: linear-gradient(180deg, #f4f4f4, #b6bcc3);
+  border-radius: 5px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+.fridge-handle-v { top: 18%; width: 7px; height: 46%; }
+.fridge-handle-right { right: 9px; }
+.fridge-handle-left { left: 9px; }
+.fridge-handle-h { top: 12px; left: 50%; width: 34%; height: 7px; transform: translateX(-50%); }
+
+.sticky-notes {
+  position: absolute;
+  inset: 12px 10px 12px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  overflow: hidden;
+}
+
+.sticky-note {
+  --rot: -2deg;
+  position: relative;
+  background: #fff6a8;
+  color: #5c4a00;
+  border-radius: 2px;
+  padding: 6px 8px 7px;
+  font-size: 10.5px;
+  line-height: 1.35;
+  font-weight: 600;
+  box-shadow: 1px 3px 5px rgba(0, 0, 0, 0.25);
+  transform: rotate(var(--rot));
+  word-break: break-word;
+}
+.sticky-note::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 22px;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  transform: translateX(-50%) rotate(-3deg);
+}
+.sticky-note .note-name { display: block; }
+.sticky-note .note-day { display: block; font-weight: 800; margin-top: 2px; }
+.sticky-note.status-expired { background: #ffd0d0; color: #7a1f1f; }
+.sticky-note.status-more {
+  background: #eef0f2;
+  color: #6b7a89;
+  text-align: center;
+  font-weight: 700;
+  box-shadow: none;
+}
+.sticky-note.status-empty {
+  background: transparent;
+  box-shadow: none;
+  color: #9aa4ad;
+  font-weight: 500;
+  text-align: center;
+  transform: none;
+  margin-top: 20%;
+}
+.sticky-note.status-empty::before { display: none; }
+
+.fridge-caption {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
 .summary-bar {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
