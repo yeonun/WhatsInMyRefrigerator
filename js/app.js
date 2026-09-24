@@ -7,6 +7,9 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 const itemsRef = db.collection("items");
 
+// 로그인 상태를 이 기기에 저장해서, 한 번 로그인하면 다음 방문 때 자동으로 로그인되게 함
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch((err) => console.error(err));
+
 /* ---------------- 상수 ---------------- */
 const CATEGORIES = ["채소", "과일", "육류/계란", "유제품", "음료", "조미료/소스", "냉동식품", "가공식품/밀키트", "기타"];
 const LOCATIONS = ["냉장실", "냉동실", "야채칸", "문칸", "기타"];
@@ -15,6 +18,7 @@ const SOON_THRESHOLD_DAYS = 3;
 /* ---------------- DOM 요소 ---------------- */
 const $ = (id) => document.getElementById(id);
 
+const loadingScreen = $("loading-screen");
 const loginScreen = $("login-screen");
 const appScreen = $("app-screen");
 const googleLoginBtn = $("google-login-btn");
@@ -96,6 +100,8 @@ let unsubscribeItems = null;
 let allItems = [];
 
 auth.onAuthStateChanged((user) => {
+  loadingScreen.classList.add("hidden");
+
   if (unsubscribeItems) {
     unsubscribeItems();
     unsubscribeItems = null;
