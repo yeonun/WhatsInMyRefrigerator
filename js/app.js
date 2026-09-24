@@ -407,6 +407,8 @@ function openFridgeSection(section) {
   fridgePhotoEl.classList.add(
     section === "freezerLeft" ? "zone-freezer-left" : section === "freezerRight" ? "zone-freezer-right" : "zone-cold"
   );
+  // 문이 열린 상태에서는 닫힌 문에 붙어있던 포스트잇을 숨김
+  stickyNotesEl.classList.add("hidden");
   fridgeShelfTitleEl.textContent = FRIDGE_SECTION_TITLES[section];
   renderFridgeShelf();
   fridgeShelfModal.classList.remove("hidden");
@@ -415,6 +417,7 @@ function openFridgeSection(section) {
 function closeFridgeSection() {
   openSection = null;
   fridgePhotoEl.classList.remove(...FRIDGE_ZONE_CLASSES);
+  stickyNotesEl.classList.remove("hidden");
   fridgeShelfModal.classList.add("hidden");
 }
 

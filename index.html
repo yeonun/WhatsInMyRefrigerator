@@ -6,7 +6,7 @@
 <title>우리집 냉장고</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧊</text></svg>">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri/dist/galmuri.css">
-<link rel="stylesheet" href="css/style.css?v=20260924b">
+<link rel="stylesheet" href="css/style.css?v=20260924c">
 </head>
 <body>
 
@@ -54,13 +54,15 @@
       <!-- 냉장고 탭: 문을 열어서 안을 들여다보는 경험 -->
       <section id="tab-fridge" class="tab-panel">
         <div class="fridge-photo-wrap">
-          <div id="fridge-photo" class="fridge-photo-bg"></div>
-          <div id="sticky-notes" class="sticky-notes"></div>
-          <button id="fridge-zone-top" class="fridge-zone fridge-zone-top" aria-label="냉장실 칸 열기"></button>
-          <button id="fridge-zone-freezer-left" class="fridge-zone fridge-zone-freezer-left" aria-label="냉동실(좌) 열기"></button>
-          <button id="fridge-zone-freezer-right" class="fridge-zone fridge-zone-freezer-right" aria-label="냉동실(우) 열기"></button>
+          <div class="fridge-stage">
+            <div id="fridge-photo" class="fridge-photo-bg"></div>
+            <div id="sticky-notes" class="sticky-notes"></div>
+            <button id="fridge-zone-top" class="fridge-zone fridge-zone-top" aria-label="냉장실 칸 열기"></button>
+            <button id="fridge-zone-freezer-left" class="fridge-zone fridge-zone-freezer-left" aria-label="냉동실(좌) 열기"></button>
+            <button id="fridge-zone-freezer-right" class="fridge-zone fridge-zone-freezer-right" aria-label="냉동실(우) 열기"></button>
+          </div>
+          <p class="fridge-caption">👆 냉장고 문을 탭해서 열어보세요</p>
         </div>
-        <p class="fridge-caption">👆 위 칸(냉장실) · 아래 왼쪽(냉동실 좌) · 아래 오른쪽(냉동실 우)을 탭해보세요</p>
       </section>
 
       <!-- 전체보기 탭: 검색/필터로 한눈에 정리 -->
@@ -169,7 +171,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js"></script>
 
-  <script src="js/firebase-config.js?v=20260924b"></script>
-  <script src="js/app.js?v=20260924b"></script>
+  <script src="js/firebase-config.js?v=20260924c"></script>
+  <script src="js/app.js?v=20260924c"></script>
 </body>
 </html>
