@@ -37,7 +37,7 @@ const userPhoto = $("user-photo");
 const userName = $("user-name");
 
 const stickyNotesEl = $("sticky-notes");
-const MAX_STICKY_NOTES = 5;
+const MAX_STICKY_NOTES = 8;
 
 let allItems = [];
 
@@ -49,6 +49,9 @@ const fridgeZoneTop = $("fridge-zone-top");
 const fridgeZoneFreezerLeft = $("fridge-zone-freezer-left");
 const fridgeZoneFreezerRight = $("fridge-zone-freezer-right");
 const fridgeShelfModal = $("fridge-shelf-modal");
+const notesModal = $("notes-modal");
+const notesModalListEl = $("notes-modal-list");
+const notesModalCloseBtn = $("notes-modal-close-btn");
 const fridgeShelfTitleEl = $("fridge-shelf-title");
 const fridgeShelfListEl = $("fridge-shelf-list");
 const fridgeShelfEmptyEl = $("fridge-shelf-empty");
@@ -72,8 +75,10 @@ const modalCloseBtn = $("modal-close-btn");
 const itemForm = $("item-form");
 const itemIdInput = $("item-id");
 const itemNameInput = $("item-name");
+const itemAmountInput = $("item-amount");
 const itemQuantityInput = $("item-quantity");
 const itemExpiryInput = $("item-expiry");
+const itemMadeInput = $("item-made");
 const itemCategoryInput = $("item-category");
 const itemLocationInput = $("item-location");
 const itemMemoInput = $("item-memo");
@@ -259,8 +264,39 @@ function formatExpiryLabel(expiryDate) {
 function withStatus(items) {
   return items.map((it) => {
     const expiryDate = it.expiryDate ? new Date(it.expiryDate) : null;
-    return { ...it, _expiryDate: expiryDate, _status: getExpiryStatus(expiryDate) };
+    const madeDate = it.madeDate ? new Date(it.madeDate) : null;
+    return { ...it, _expiryDate: expiryDate, _madeDate: madeDate, _status: getExpiryStatus(expiryDate) };
   });
+}
+
+// 제조·보관일만 있는 재료는 이 기간이 지나면 유통기한이 지난 것처럼 위로 올림
+const MADE_STALE_DAYS = 14;
+
+// 소비기한 빠른 순: 유통기한 있는 재료(가까운 순) → 유통기한 없이 제조·보관일만 있는 재료(오래된 순) → 둘 다 없는 재료.
+// 단, 제조·보관일이 MADE_STALE_DAYS 넘게 지난 재료는 (제조·보관일 + MADE_STALE_DAYS)를 유통기한 삼아 첫 그룹에 섞음
+function compareConsumeOrder(a, b) {
+  const key = (it) => {
+    if (it._expiryDate) return [0, it._expiryDate.getTime()];
+    if (it._madeDate) {
+      const due = getDateOnly(it._madeDate);
+      due.setDate(due.getDate() + MADE_STALE_DAYS);
+      if (due <= getDateOnly(new Date())) return [0, due.getTime()];
+      return [1, it._madeDate.getTime()];
+    }
+    return [2, 0];
+  };
+  const [ra, ta] = key(a);
+  const [rb, tb] = key(b);
+  return ra - rb || ta - tb;
+}
+
+function formatMadeLabel(madeDate) {
+  const today = getDateOnly(new Date());
+  const made = getDateOnly(madeDate);
+  const diffDays = Math.round((today - made) / (1000 * 60 * 60 * 24));
+  const dateStr = `${made.getFullYear()}.${String(made.getMonth() + 1).padStart(2, "0")}.${String(made.getDate()).padStart(2, "0")}`;
+  if (diffDays <= 0) return `${dateStr} (오늘 보관)`;
+  return `${dateStr} (${diffDays}일 경과)`;
 }
 
 function renderItems() {
@@ -290,11 +326,7 @@ function renderItems() {
       const bT = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
       return bT - aT;
     }
-    // expiry: 유통기한 없는 항목은 맨 뒤로
-    if (!a._expiryDate && !b._expiryDate) return 0;
-    if (!a._expiryDate) return 1;
-    if (!b._expiryDate) return -1;
-    return a._expiryDate - b._expiryDate;
+    return compareConsumeOrder(a, b);
   });
 
   // 요약 카운트는 필터와 무관하게 전체 기준
@@ -318,19 +350,59 @@ function renderItems() {
 }
 
 /* ---------------- 냉장고 문 포스트잇 ---------------- */
-// 문자열을 안정적인 각도(-6deg ~ 6deg)로 매핑 (매 렌더마다 같은 아이템은 같은 각도 유지)
-function hashRotation(id) {
+// 파스텔 포스트잇 색 (붙은 순서대로 돌아가며 칠해서 옆끼리 겹치지 않게)
+const STICKY_COLORS = ["#ffd6e0", "#ffe7a3", "#cdefd6", "#cfe4ff", "#e4d6ff", "#ffd8bd"];
+
+// 같은 재료는 매 렌더마다 같은 값이 나오도록 id를 숫자로 매핑
+function hashId(id) {
   let hash = 0;
   for (let i = 0; i < id.length; i++) {
     hash = (hash * 31 + id.charCodeAt(i)) % 1000;
   }
-  return (hash % 13) - 6;
+  return hash;
+}
+
+// -6deg ~ 6deg
+function hashRotation(id) {
+  return (hashId(id) % 13) - 6;
+}
+
+function getUrgentItems() {
+  return withStatus(allItems)
+    .filter((it) => it._status === "soon" || it._status === "expired")
+    .sort((a, b) => a._expiryDate - b._expiryDate);
+}
+
+function makeStickyNote(it, index, onClick) {
+  const note = document.createElement("button");
+  note.type = "button";
+  note.className = `sticky-note status-${it._status}`;
+  note.style.setProperty("--rot", `${hashRotation(it.id)}deg`);
+  note.style.setProperty("--note-bg", STICKY_COLORS[index % STICKY_COLORS.length]);
+  note.addEventListener("click", onClick);
+
+  const name = document.createElement("span");
+  name.className = "note-name";
+  name.textContent = it.name || "(이름 없음)";
+
+  const day = document.createElement("span");
+  day.className = "note-day";
+  const dateLabel = formatExpiryLabel(it._expiryDate);
+  day.textContent = dateLabel.substring(dateLabel.indexOf("(") + 1).replace(")", "");
+
+  note.appendChild(name);
+  note.appendChild(day);
+  return note;
+}
+
+// 포스트잇을 누르면 그 재료가 들어있는 칸의 문이 열리고 해당 재료가 강조됨
+function openNoteItem(it) {
+  closeNotesModal();
+  openFridgeSection(sectionOfLocation(it.location), it.id);
 }
 
 function renderStickyNotes() {
-  const urgent = withStatus(allItems)
-    .filter((it) => it._status === "soon" || it._status === "expired")
-    .sort((a, b) => a._expiryDate - b._expiryDate);
+  const urgent = getUrgentItems();
 
   stickyNotesEl.innerHTML = "";
 
@@ -340,40 +412,47 @@ function renderStickyNotes() {
     empty.textContent = "빨리 먹어야 할\n재료가 없어요";
     empty.style.whiteSpace = "pre-line";
     stickyNotesEl.appendChild(empty);
+    if (!notesModal.classList.contains("hidden")) closeNotesModal();
     return;
   }
 
-  const shown = urgent.slice(0, MAX_STICKY_NOTES);
-  shown.forEach((it) => {
-    // 포스트잇을 누르면 그 재료가 들어있는 칸의 문이 열리고 해당 재료가 강조됨
-    const note = document.createElement("button");
-    note.type = "button";
-    note.className = `sticky-note status-${it._status}`;
-    note.style.setProperty("--rot", `${hashRotation(it.id)}deg`);
-    note.addEventListener("click", () => openFridgeSection(sectionOfLocation(it.location), it.id));
+  // 넘치면 마지막 자리는 '더보기' 포스트잇이 차지
+  const overflow = urgent.length > MAX_STICKY_NOTES;
+  const shown = overflow ? urgent.slice(0, MAX_STICKY_NOTES - 1) : urgent;
+  shown.forEach((it, i) => stickyNotesEl.appendChild(makeStickyNote(it, i, () => openNoteItem(it))));
 
-    const name = document.createElement("span");
-    name.className = "note-name";
-    name.textContent = it.name || "(이름 없음)";
-
-    const day = document.createElement("span");
-    day.className = "note-day";
-    const dateLabel = formatExpiryLabel(it._expiryDate);
-    day.textContent = dateLabel.substring(dateLabel.indexOf("(") + 1).replace(")", "");
-
-    note.appendChild(name);
-    note.appendChild(day);
-    stickyNotesEl.appendChild(note);
-  });
-
-  const remaining = urgent.length - shown.length;
-  if (remaining > 0) {
-    const more = document.createElement("div");
+  if (overflow) {
+    const more = document.createElement("button");
+    more.type = "button";
     more.className = "sticky-note status-more";
-    more.textContent = `+${remaining}개 더`;
+    more.style.setProperty("--rot", "3deg");
+    more.textContent = `+${urgent.length - shown.length}개\n더보기`;
+    more.addEventListener("click", openNotesModal);
     stickyNotesEl.appendChild(more);
   }
+
+  if (!notesModal.classList.contains("hidden")) renderNotesModal();
 }
+
+/* ---------------- 포스트잇 모아보기 모달 ---------------- */
+function renderNotesModal() {
+  notesModalListEl.innerHTML = "";
+  getUrgentItems().forEach((it, i) => notesModalListEl.appendChild(makeStickyNote(it, i, () => openNoteItem(it))));
+}
+
+function openNotesModal() {
+  renderNotesModal();
+  notesModal.classList.remove("hidden");
+}
+
+function closeNotesModal() {
+  notesModal.classList.add("hidden");
+}
+
+notesModalCloseBtn.addEventListener("click", closeNotesModal);
+notesModal.addEventListener("click", (e) => {
+  if (e.target === notesModal) closeNotesModal();
+});
 
 function renderItemCard(item) {
   const card = document.createElement("div");
@@ -399,11 +478,23 @@ function renderItemCard(item) {
   const name = document.createElement("p");
   name.className = "item-name";
   name.textContent = item.name || "(이름 없음)";
+  // 예: 우유(300ml) × 3팩
+  if (item.amount) {
+    const amount = document.createElement("span");
+    amount.className = "item-amount";
+    amount.textContent = `(${item.amount})`;
+    name.appendChild(amount);
+  }
+  if (item.quantity) {
+    const count = document.createElement("span");
+    count.className = "item-count";
+    count.textContent = ` × ${item.quantity}`;
+    name.appendChild(count);
+  }
   main.appendChild(name);
 
   const meta = document.createElement("div");
   meta.className = "item-meta";
-  if (item.quantity) meta.appendChild(makeTag(item.quantity));
   if (item.category) meta.appendChild(makeTag(item.category));
   if (item.location) meta.appendChild(makeTag(item.location));
   main.appendChild(meta);
@@ -412,14 +503,17 @@ function renderItemCard(item) {
 
   const expiry = document.createElement("div");
   expiry.className = "item-expiry";
+  // 유통기한이 없으면 제조·보관일과 경과일을 대신 보여줌
+  const dateLabel = item._expiryDate
+    ? formatExpiryLabel(item._expiryDate)
+    : item._madeDate
+      ? formatMadeLabel(item._madeDate)
+      : null;
+  if (!item._expiryDate && item._madeDate) expiry.classList.add("item-expiry-made");
   const strong = document.createElement("strong");
-  strong.textContent = item._expiryDate
-    ? formatExpiryLabel(item._expiryDate).split(" (")[0]
-    : "미입력";
+  strong.textContent = dateLabel ? dateLabel.split(" (")[0] : "미입력";
   const sub = document.createElement("span");
-  sub.textContent = item._expiryDate
-    ? "(" + formatExpiryLabel(item._expiryDate).split(" (")[1]
-    : "";
+  sub.textContent = dateLabel ? "(" + dateLabel.split(" (")[1] : "";
   expiry.appendChild(strong);
   expiry.appendChild(document.createElement("br"));
   expiry.appendChild(sub);
@@ -606,12 +700,7 @@ function renderFridgeShelf() {
     if (openSection === "freezerRight") return isFreezerRight(it.location);
     return !isFrozenLocation(it.location);
   });
-  const items = withStatus(filtered).sort((a, b) => {
-    if (!a._expiryDate && !b._expiryDate) return 0;
-    if (!a._expiryDate) return 1;
-    if (!b._expiryDate) return -1;
-    return a._expiryDate - b._expiryDate;
-  });
+  const items = withStatus(filtered).sort(compareConsumeOrder);
 
   fridgeShelfListEl.innerHTML = "";
   if (items.length === 0) {
@@ -647,8 +736,10 @@ function openEditModal(item) {
   modalTitle.textContent = "재료 수정";
   itemIdInput.value = item.id;
   itemNameInput.value = item.name || "";
+  itemAmountInput.value = item.amount || "";
   itemQuantityInput.value = item.quantity || "";
   itemExpiryInput.value = item.expiryDate || "";
+  itemMadeInput.value = item.madeDate || "";
   itemCategoryInput.value = item.category || "";
   itemLocationInput.value = item.location || "";
   itemMemoInput.value = item.memo || "";
@@ -677,8 +768,10 @@ itemForm.addEventListener("submit", async (e) => {
 
   const data = {
     name: itemNameInput.value.trim(),
+    amount: itemAmountInput.value.trim(),
     quantity: itemQuantityInput.value.trim(),
     expiryDate: itemExpiryInput.value || null,
+    madeDate: itemMadeInput.value || null,
     category: itemCategoryInput.value || "",
     location: itemLocationInput.value || "",
     memo: itemMemoInput.value.trim(),

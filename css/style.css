@@ -238,17 +238,21 @@ h1, h2, .pixel-title { font-family: "Galmuri14", "Malgun Gothic", sans-serif; }
   min-width: 100%;
 }
 
+/* 닫힌 이미지와 열린 스프라이트 각 프레임은 구도가 조금씩 달라서, 그대로 쓰면 문을 여닫을 때
+   냉장고가 커졌다 작아졌다 들썩임. 냉동실 왼쪽 프레임의 냉장고 외곽(좌 27.4% · 우 71.8% ·
+   위 8.8% · 아래 86.4%)을 기준으로 나머지 이미지를 늘려 외곽을 맞춤. 줄이면 스프라이트의
+   옆 프레임이 비치므로 모든 배율은 1 이상이 되도록 기준을 잡았음 */
 .fridge-photo-bg {
   position: absolute;
   inset: 0;
   background-image: url('../img/fridge-closed.png');
-  background-size: cover;
-  background-position: center;
+  background-size: 111.2% 105.87%;
+  background-position: 41.68% 44.73%;
 }
 .fridge-photo-bg.zone-cold {
   background-image: url('../img/fridge-open-sprite.png');
-  background-size: 200% 200%;
-  background-position: 0% 0%;
+  background-size: 201.45% 200.82%;
+  background-position: 0.51% 0.19%;
 }
 .fridge-photo-bg.zone-freezer-left {
   background-image: url('../img/fridge-open-sprite.png');
@@ -257,8 +261,8 @@ h1, h2, .pixel-title { font-family: "Galmuri14", "Malgun Gothic", sans-serif; }
 }
 .fridge-photo-bg.zone-freezer-right {
   background-image: url('../img/fridge-open-sprite.png');
-  background-size: 200% 200%;
-  background-position: 0% 100%;
+  background-size: 201.45% 204.62%;
+  background-position: 0.2% 98.14%;
 }
 
 .fridge-zone {
@@ -268,39 +272,50 @@ h1, h2, .pixel-title { font-family: "Galmuri14", "Malgun Gothic", sans-serif; }
   cursor: pointer;
   padding: 0;
 }
-.fridge-zone-top { left: 28%; width: 41%; top: 10%; height: 40%; }
-.fridge-zone-freezer-left { left: 28%; width: 20.5%; top: 51%; height: 32%; }
-.fridge-zone-freezer-right { left: 48.5%; width: 20.5%; top: 51%; height: 32%; }
+.fridge-zone-top { left: 26.5%; width: 45.6%; top: 8%; height: 42.3%; }
+.fridge-zone-freezer-left { left: 26.5%; width: 22.8%; top: 51.4%; height: 33.9%; }
+.fridge-zone-freezer-right { left: 49.3%; width: 22.8%; top: 51.4%; height: 33.9%; }
 
+/* 포스트잇: 오른쪽 냉장실 문 위에 2열 × 4줄 정사각형 격자. 칸 크기는 문 영역의 가로·세로 중
+   더 빡빡한 쪽에 맞춰 정사각형이 넘치지 않게 함 */
 .sticky-notes {
   position: absolute;
-  left: 49%;
-  top: 10%;
-  width: 20%;
-  height: 40%;
+  left: 49.8%;
+  top: 8%;
+  width: 22.2%;
+  height: 42.3%;
   /* 포스트잇이 냉장실 문 클릭 영역 안에 겹쳐 있어, 위로 올리지 않으면 탭이 문에 먹힘 */
   z-index: 2;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  overflow: hidden;
+  container-type: size;
+  --note-gap: 5px;
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  gap: var(--note-gap);
+  justify-content: center;
+  align-content: start;
+  padding-top: 4px;
   /* 컨테이너 여백은 냉장고 문 클릭을 가리지 않도록 통과시키고, 포스트잇만 눌리게 함 */
   pointer-events: none;
 }
 
 .sticky-note {
   --rot: -2deg;
+  --note-bg: var(--yellow);
   position: relative;
-  display: block;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   width: 100%;
-  text-align: left;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  text-align: center;
   font-family: inherit;
-  background: var(--yellow);
+  background: var(--note-bg);
   color: var(--ink);
   border: 2px solid var(--ink);
-  padding: 4px 5px 5px;
+  padding: 3px;
   font-size: 9px;
-  line-height: 1.3;
+  line-height: 1.25;
   box-shadow: 2px 2px 0 var(--ink);
   transform: rotate(var(--rot));
   word-break: break-word;
@@ -310,35 +325,64 @@ button.sticky-note:active { transform: rotate(var(--rot)) translate(2px, 2px); b
 .sticky-note::before {
   content: "";
   position: absolute;
-  top: -5px;
+  top: 0;
   left: 50%;
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 4px;
   background: var(--coral-dark);
   border: 1px solid var(--ink);
+  border-top: none;
   transform: translateX(-50%);
 }
-.sticky-note .note-name { display: block; }
+/* cq 단위는 자기 자신이 아니라 조상 컨테이너 기준이라, 크기 계산은 포스트잇 쪽에서 */
+.sticky-notes > .sticky-note {
+  width: min((100cqw - var(--note-gap)) / 2, (100cqh - 4px - var(--note-gap) * 3) / 4);
+}
+.sticky-note .note-name {
+  font-size: 11px;
+  font-weight: 700;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 .sticky-note .note-day { display: block; font-weight: 700; margin-top: 2px; }
-.sticky-note.status-expired { background: var(--coral); }
+/* 배경색이 알록달록하니 지난 재료는 글자색으로 구분 */
+.sticky-note.status-expired .note-day { color: var(--coral-dark); }
 .sticky-note.status-more {
   background: var(--paper);
   color: var(--ink-soft);
-  text-align: center;
   font-weight: 700;
-  box-shadow: none;
+  white-space: pre-line;
   border-style: dashed;
 }
-.sticky-note.status-empty {
+.sticky-note.status-more::before { display: none; }
+.sticky-notes > .sticky-note.status-empty {
+  grid-column: 1 / -1;
+  width: 100cqw;
+  aspect-ratio: auto;
+  padding-top: 40%;
   background: transparent;
   border: none;
   box-shadow: none;
   color: var(--ink-soft);
-  text-align: center;
   transform: none;
-  margin-top: 20%;
 }
 .sticky-note.status-empty::before { display: none; }
+
+/* 포스트잇 모아보기 모달: 가운데 정렬 격자 */
+#notes-modal { align-items: center; padding: 20px; }
+#notes-modal .modal { max-height: 80vh; }
+.notes-modal-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 88px);
+  gap: 14px;
+  justify-content: center;
+  padding: 8px 0 4px;
+}
+.notes-modal-list .sticky-note { font-size: 12px; padding: 6px; }
+.notes-modal-list .sticky-note .note-name { font-size: 14px; }
+.notes-modal-list .sticky-note::before { width: 10px; height: 6px; }
 
 .fridge-caption {
   position: absolute;
@@ -461,6 +505,8 @@ button.sticky-note:active { transform: rotate(var(--rot)) translate(2px, 2px); b
 
 .item-main { min-width: 0; }
 .item-name { font-size: 14px; font-weight: 700; margin: 0 0 6px; word-break: break-word; }
+.item-amount { font-weight: 400; color: var(--ink-soft); }
+.item-count { white-space: nowrap; }
 .item-meta { font-size: 11px; color: var(--ink-soft); display: flex; flex-wrap: wrap; gap: 6px; }
 .item-tag {
   background: var(--bg);
@@ -475,6 +521,8 @@ button.sticky-note:active { transform: rotate(var(--rot)) translate(2px, 2px); b
   white-space: nowrap;
 }
 .item-expiry strong { display: block; font-size: 13px; color: var(--ink); font-family: "Galmuri14", sans-serif; }
+/* 유통기한 대신 제조·보관일을 보여줄 때는 기한이 아니라는 게 드러나도록 톤을 낮춤 */
+.item-expiry-made strong { color: var(--ink-soft); }
 
 .empty-state { text-align: center; color: var(--ink-soft); margin-top: 60px; font-size: 13px; }
 
@@ -579,6 +627,8 @@ input[type="date"].form-input {
 .form-col { flex: 1; min-width: 0; }
 @media (max-width: 560px) {
   .form-row { flex-direction: column; gap: 0; }
+  /* 양·수량처럼 짧은 칸은 폰에서도 나란히 */
+  .form-row.form-row-keep { flex-direction: row; gap: 10px; }
 }
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
 
